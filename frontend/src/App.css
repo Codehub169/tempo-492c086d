@@ -1,0 +1,273 @@
+/* Global Styles */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+  color: #212529;
+  line-height: 1.6;
+}
+
+/* Font Families */
+.font-primary {
+  font-family: 'Inter', sans-serif;
+}
+
+.font-secondary {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Colors */
+.text-primary {
+  color: #007bff;
+}
+
+.bg-primary {
+  background-color: #007bff;
+}
+
+.text-secondary {
+  color: #6c757d;
+}
+
+.bg-secondary {
+  background-color: #6c757d;
+}
+
+.text-accent {
+  color: #28a745;
+}
+
+.bg-accent {
+  background-color: #28a745;
+}
+
+.text-dark {
+  color: #212529;
+}
+
+.bg-light {
+  background-color: #f8f9fa;
+}
+
+/* Container */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  color: #343a40;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  border: none;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-accent:hover {
+  background-color: #1e7e34;
+  transform: translateY(-1px);
+}
+
+/* App Header (Optional - if you add a global header/nav in App.js) */
+.app-header {
+  background-color: #ffffff;
+  padding: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.app-title {
+  font-size: 2rem;
+  color: #007bff;
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Upload Page Styles */
+.upload-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 120px); /* Adjust if you have a fixed header/footer */
+  padding: 2rem;
+  text-align: center;
+}
+
+.upload-card {
+  background-color: #ffffff;
+  padding: 2.5rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  max-width: 550px;
+  width: 100%;
+}
+
+.upload-card h1 {
+  font-size: 2.2rem;
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+.upload-card p {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 2rem;
+  font-family: 'Roboto', sans-serif;
+}
+
+.upload-form input[type="file"] {
+  display: none; /* Hide the default input */
+}
+
+.file-upload-label {
+  display: inline-block;
+  padding: 12px 20px;
+  background-color: #e9ecef;
+  color: #007bff;
+  border: 2px dashed #007bff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 1.5rem;
+  font-family: 'Roboto', sans-serif;
+}
+
+.file-upload-label:hover {
+  background-color: #d4d9de;
+}
+
+.file-name {
+  font-family: 'Roboto', sans-serif;
+  color: #28a745;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.upload-icon {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.loading-message, .error-message {
+  margin-top: 1.5rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+}
+
+.loading-message {
+  color: #007bff;
+}
+
+.error-message {
+  color: #dc3545;
+}
+
+/* Preview Page Styles */
+.preview-page-container {
+  padding: 2rem;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.preview-header h1 {
+  color: #007bff;
+  font-size: 2.5rem;
+}
+
+.portfolio-placeholder {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  padding: 2rem;
+}
+
+.portfolio-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.portfolio-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.portfolio-section h2 {
+  font-size: 1.8rem;
+  color: #343a40;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #007bff;
+  display: inline-block;
+}
+
+.portfolio-section p, .portfolio-section ul {
+  font-family: 'Roboto', sans-serif;
+  color: #555;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.portfolio-section ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .upload-card {
+    padding: 2rem;
+  }
+  .upload-card h1 {
+    font-size: 1.8rem;
+  }
+  .preview-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .preview-header .btn {
+    margin-top: 1rem;
+  }
+}

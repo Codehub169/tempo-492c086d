@@ -1,0 +1,11 @@
+Flask>=2.3,<3.0
+Flask-CORS>=4.0,<5.0
+python-dotenv>=1.0,<2.0
+Werkzeug>=2.3,<3.0
+# Resume Parsing Libraries
+python-docx>=0.8.11,<0.9
+PyPDF2>=3.0,<3.1
+nltk>=3.8,<3.9
+# Database (SQLAlchemy ORM and Flask integration)
+Flask-SQLAlchemy>=3.0,<3.1
+SQLAlchemy>=2.0,<2.1
