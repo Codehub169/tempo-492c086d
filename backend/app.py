@@ -17,6 +17,8 @@ def _transform_parsed_data_to_frontend_format(parsed_data):
     """Transforms data from parse_resume into the format expected by PreviewPage.js."""
     # profilePicUrl is handled directly in PreviewPage.js with a random image for now.
     # The keys like 'fullName' and 'jobTitle' match what PreviewPage.js expects.
+    # Experience and Education are passed as lists which can contain dictionaries or strings,
+    # as per the updated resume_parser.py and PreviewPage.js capabilities.
     frontend_data = {
         "fullName": parsed_data.get('name', 'Name not parsed'),
         "jobTitle": parsed_data.get('title', 'Title not parsed'),
@@ -27,8 +29,6 @@ def _transform_parsed_data_to_frontend_format(parsed_data):
             "linkedin": parsed_data.get('linkedin', ''),
             "github": parsed_data.get('github', '')
         },
-        # Experience and Education are passed as lists of strings/text blocks
-        # as parsed by the current resume_parser.py.
         "experience": parsed_data.get('experience', []),
         "education": parsed_data.get('education', []),
         "skills": parsed_data.get('skills', [])
@@ -87,7 +87,6 @@ def upload_resume_file():
 
         try:
             parsed_data = parse_resume(saved_filepath)
-            # The filename argument was removed from _transform_parsed_data_to_frontend_format as it was unused.
             portfolio_data = _transform_parsed_data_to_frontend_format(parsed_data)
         except ValueError as ve: # Catch specific errors from parser if possible
             app.logger.error(f"Unsupported file type or parsing error for '{filename}': {ve}", exc_info=True)

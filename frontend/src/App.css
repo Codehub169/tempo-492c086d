@@ -88,6 +88,16 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-1px);
 }
 
+.btn-secondary {
+  background-color: #6c757d; /* Added for consistency with PreviewPage.js usage */
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+}
+
 .btn-accent {
   background-color: #28a745;
   color: white;
@@ -195,64 +205,234 @@ h1, h2, h3, h4, h5, h6 {
 
 .error-message {
   color: #dc3545;
+  padding: 1rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
-/* Preview Page Styles */
+/* Preview Page Styles - Enhanced & New */
 .preview-page-container {
   padding: 2rem;
+  max-width: 1000px; /* Align with portfolio_style.css for content width */
 }
 
-.preview-header {
+.preview-actions-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.preview-header h1 {
-  color: #007bff;
-  font-size: 2.5rem;
-}
-
-.portfolio-placeholder {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  padding: 2rem;
-}
-
-.portfolio-section {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 2px solid #e0e0e0;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
-.portfolio-section:last-child {
-  border-bottom: none;
+.preview-main-title {
+  color: #007bff;
+  font-size: 2.2rem; /* Slightly reduced from old .preview-header h1 */
+  margin: 0;
+}
+
+.preview-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.preview-nav-btn {
+  /* Using existing .btn, .btn-secondary, .btn-accent classes */
+}
+
+.preview-nav-btn svg {
+  margin-right: 8px;
+  vertical-align: middle; /* Align icon better with text */
+}
+
+.portfolio-preview-content {
+  /* This container holds all portfolio sections */
+}
+
+.preview-hero-section {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: #ffffff;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2.5rem;
+}
+
+.preview-profile-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.preview-user-name {
+  font-size: 2.4rem;
+  color: #ffffff;
+  margin: 0.3em 0 0.1em 0;
+  font-weight: 700;
+}
+
+.preview-user-title {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 300;
+  margin: 0;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+/* Reusing .portfolio-section for general structure, adding card-like appearance */
+.portfolio-section.preview-section {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  border-bottom: none; /* Override original border if any */
+}
+
+.portfolio-section.preview-section:last-child {
   margin-bottom: 0;
 }
 
-.portfolio-section h2 {
+.preview-section-title {
   font-size: 1.8rem;
-  color: #343a40;
-  margin-bottom: 1rem;
+  color: #007bff; /* Primary color for section titles */
+  margin-top: 0; /* Remove top margin for card context */
+  margin-bottom: 1.2rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #007bff;
   display: inline-block;
+  font-weight: 600;
 }
 
-.portfolio-section p, .portfolio-section ul {
+.preview-summary-text,
+.preview-contact-details p,
+.preview-item-description {
   font-family: 'Roboto', sans-serif;
-  color: #555;
+  color: #495057; /* Slightly lighter text color */
   font-size: 1rem;
   line-height: 1.7;
 }
 
-.portfolio-section ul {
-  list-style-type: disc;
-  padding-left: 20px;
+.preview-contact-details ul {
+  list-style-type: none;
+  padding-left: 0;
+  font-family: 'Roboto', sans-serif;
+}
+
+.preview-contact-details li {
+  margin-bottom: 0.7rem;
+  color: #495057;
+}
+
+.preview-contact-details li strong {
+  color: #212529;
+}
+
+.preview-contact-details a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.preview-contact-details a:hover {
+  text-decoration: underline;
+}
+
+.preview-item-card {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.preview-item-card:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.preview-item-title {
+  font-size: 1.3rem;
+  color: #343a40;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.preview-item-meta {
+  font-family: 'Roboto', sans-serif;
+  color: #6c757d;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.preview-item-description {
+  padding-left: 1rem; /* Indent description */
+  border-left: 3px solid #28a745; /* Accent color border */
+  margin-top: 0.5rem;
+}
+
+.preview-fallback-text {
+  font-family: 'Roboto', sans-serif;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.preview-skills-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-skill-tag {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.preview-skill-tag:hover {
+  background-color: #1e7e34;
+}
+
+/* Loading and Error States for Preview Page */
+.preview-loading,
+.preview-error,
+.preview-no-data {
+  text-align: center;
+  padding: 3rem 1rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.2rem;
+}
+
+.preview-loading {
+  color: #007bff;
+}
+
+.preview-error {
+  /* .error-message already provides good base */
+}
+
+.preview-no-data {
+  color: #6c757d;
+}
+
+.preview-try-again-btn,
+.preview-generate-new-btn {
+  margin-top: 1.5rem;
+  /* Uses .btn and .btn-primary */
 }
 
 /* Responsive adjustments */
@@ -263,11 +443,68 @@ h1, h2, h3, h4, h5, h6 {
   .upload-card h1 {
     font-size: 1.8rem;
   }
-  .preview-header {
+  .preview-actions-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem; /* Space between title and buttons when stacked */
   }
-  .preview-header .btn {
-    margin-top: 1rem;
+  .preview-buttons {
+    width: 100%;
+    flex-direction: column; /* Stack buttons on small screens */
+  }
+  .preview-buttons .btn {
+    width: 100%; /* Make buttons full width */
+    box-sizing: border-box;
+  }
+  .preview-main-title {
+    font-size: 2rem;
+  }
+  .preview-hero-section {
+    padding: 1.5rem 1rem;
+  }
+  .preview-profile-image {
+    width: 120px;
+    height: 120px;
+  }
+  .preview-user-name {
+    font-size: 2rem;
+  }
+  .preview-user-title {
+    font-size: 1.1rem;
+  }
+  .preview-section-title {
+    font-size: 1.6rem;
+  }
+  .preview-item-title {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .preview-page-container {
+    padding: 1rem;
+  }
+  .preview-profile-image {
+    width: 100px;
+    height: 100px;
+  }
+  .preview-user-name {
+    font-size: 1.8rem;
+  }
+  .preview-user-title {
+    font-size: 1rem;
+  }
+  .preview-section-title {
+    font-size: 1.4rem;
+  }
+  .preview-item-title {
+    font-size: 1.1rem;
+  }
+  .preview-item-description {
+    padding-left: 0.75rem;
+  }
+  .preview-skill-tag {
+    padding: 6px 12px;
+    font-size: 0.85rem;
   }
 }

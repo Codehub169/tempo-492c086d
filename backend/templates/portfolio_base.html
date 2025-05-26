@@ -4,174 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ data.name | default('My Portfolio') }}</title>
-    <!-- Link to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Link to the portfolio stylesheet -->
-    <!-- Path assumes CSS is served from a 'static' dir relative to where Flask serves this HTML -->
-    <!-- For downloadable bundle, this might be './portfolio_style.css' -->
-    <link rel="stylesheet" href="../static/portfolio_style.css">
-    
-    <style>
-        /* Style Guide Adherence & Basic Structure - Inline for portability/fallback */
-        body {
-            font-family: 'Inter', sans-serif; /* Primary Font */
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa; /* Background Color */
-            color: #212529; /* Text Color */
-            line-height: 1.6;
-        }
-        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-        
-        .portfolio-header {
-            background-color: #007bff; /* Primary Color */
-            color: white;
-            padding: 50px 20px;
-            text-align: center;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        .portfolio-header h1 { font-family: 'Inter', sans-serif; margin: 10px 0 10px 0; font-size: 2.8em; font-weight: 700;}
-        .portfolio-header .user-title { font-family: 'Roboto', sans-serif; margin: 0; font-size: 1.3em; color: #e0e0e0; font-weight: 400; }
-        
-        .profile-image-placeholder {
-            width: 150px; height: 150px;
-            background-color: #e9ecef;
-            border-radius: 50%;
-            margin: 0 auto 20px auto;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.9em; color: #6c757d; /* Secondary Color */
-            text-align: center;
-            /* Default placeholder image, can be overridden by actual image if available */
-            background-image: url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fHww&auto=format&fit=crop&w=150&q=80');
-            background-size: cover; background-position: center;
-            border: 4px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .portfolio-section {
-            background-color: white;
-            margin-bottom: 30px;
-            padding: 25px 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
-        }
-        .portfolio-section h2 {
-            font-family: 'Inter', sans-serif; /* Primary Font for headings */
-            color: #007bff; /* Primary Color */
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 12px;
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-size: 1.8em;
-        }
-        .contact-info p { margin: 8px 0; }
-        .contact-info a {
-            color: #007bff; /* Primary Color */
-            text-decoration: none;
-            font-weight: 500; /* Roboto Medium */
-        }
-        .contact-info a:hover { text-decoration: underline; color: #0056b3; }
-        
-        .skills-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
-        .skills-list li {
-            background-color: #28a745; /* Accent Color */
-            color: white;
-            padding: 8px 18px;
-            border-radius: 20px;
-            font-size: 0.95em;
-            font-family: 'Roboto', sans-serif; /* Secondary Font for skills */
-            font-weight: 500;
-        }
-        
-        .experience-item, .education-item {
-            margin-bottom: 25px;
-            padding-bottom: 25px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .experience-item:last-child, .education-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        
-        .item-header h3 { /* For Job Title / Degree */
-            font-family: 'Roboto', sans-serif; /* Secondary Font */
-            font-weight: 700; /* Roboto Bold */
-            margin: 0 0 5px 0;
-            color: #343a40;
-            font-size: 1.25em;
-        }
-        .item-header .company, .item-header .institution { /* Company / Institution */
-            font-family: 'Roboto', sans-serif; /* Secondary Font */
-            font-style: normal;
-            font-weight: 500; /* Roboto Medium */
-            color: #6c757d; /* Secondary Color */
-            margin-bottom: 5px;
-            font-size: 1em;
-        }
-        .item-header .period { /* Period */
-            font-size: 0.9em;
-            color: #6c757d; /* Secondary Color */
-            margin-bottom: 10px;
-            font-family: 'Roboto', sans-serif;
-        }
-        .item-description p, .item-details p {
-            font-family: 'Roboto', sans-serif; /* Secondary Font for descriptions */
-            color: #495057;
-            margin-top: 10px;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px 0;
-            margin-top: 40px;
-            font-size: 0.9em;
-            color: #6c757d; /* Secondary Color */
-            border-top: 1px solid #e0e0e0;
-            font-family: 'Roboto', sans-serif;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Path to CSS. For downloadable bundle, this should be a relative path like './portfolio_style.css' -->
+    <!-- Assuming Flask serves it from /static/portfolio_style.css -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='portfolio_style.css') if url_for else '../static/portfolio_style.css' }}">
 </head>
 <body>
     <div class="container">
         <header class="portfolio-header">
-            <div class="profile-image-placeholder" alt="Profile Picture of {{ data.name | default('User') }}"></div>
-            <h1>{{ data.name | default('Your Name') }}</h1>
+            {% if data.profile_image_url %}
+                <img src="{{ data.profile_image_url }}" alt="Profile of {{ data.name | default('User') }}" class="profile-image">
+            {% else %}
+                <div class="profile-image-placeholder" aria-label="Profile picture placeholder">{{ data.name[0] if data.name else 'U' }}</div>
+            {% endif %}
+            <h1 class="user-name">{{ data.name | default('Your Name') }}</h1>
             <p class="user-title">{{ data.title | default('Your Professional Title') }}</p>
         </header>
 
         {% if data.summary %}
-        <section id="about" class="portfolio-section">
+        <section id="about" class="portfolio-section card">
             <h2>About Me</h2>
-            <p>{{ data.summary | replace('\n', '<br>') | safe }}</p>
+            <p class="summary-text">{{ data.summary | replace('\n', '<br>') | safe }}</p>
         </section>
         {% endif %}
 
-        <section id="contact" class="portfolio-section contact-info">
+        <section id="contact" class="portfolio-section card contact-info">
             <h2>Contact Information</h2>
-            {% if data.email %}<p><strong>Email:</strong> <a href="mailto:{{ data.email }}">{{ data.email }}</a></p>{% endif %}
-            {% if data.phone %}<p><strong>Phone:</strong> {{ data.phone }}</p>{% endif %}
-            {% if data.linkedin %}<p><strong>LinkedIn:</strong> <a href="https://{{ data.linkedin if not data.linkedin.startswith('http') else data.linkedin }}" target="_blank" rel="noopener noreferrer">{{ data.linkedin }}</a></p>{% endif %}
-            {% if data.github %}<p><strong>GitHub:</strong> <a href="https://{{ data.github if not data.github.startswith('http') else data.github }}" target="_blank" rel="noopener noreferrer">{{ data.github }}</a></p>{% endif %}
+            <ul>
+                {% if data.email %}<li><i class="icon-email"></i><a href="mailto:{{ data.email }}">{{ data.email }}</a></li>{% endif %}
+                {% if data.phone %}<li><i class="icon-phone"></i>{{ data.phone }}</li>{% endif %}
+                {% if data.linkedin %}<li><i class="icon-linkedin"></i><a href="https://{{ data.linkedin if not data.linkedin.startswith('http') else data.linkedin }}" target="_blank" rel="noopener noreferrer">{{ data.linkedin }}</a></li>{% endif %}
+                {% if data.github %}<li><i class="icon-github"></i><a href="https://{{ data.github if not data.github.startswith('http') else data.github }}" target="_blank" rel="noopener noreferrer">{{ data.github }}</a></li>{% endif %}
+            </ul>
             {% if not data.email and not data.phone and not data.linkedin and not data.github %}
             <p>Contact information not available.</p>
             {% endif %}
         </section>
 
         {% if data.experience and data.experience|length > 0 %}
-        <section id="experience" class="portfolio-section">
+        <section id="experience" class="portfolio-section card">
             <h2>Work Experience</h2>
             {% for job in data.experience %}
-            <div class="experience-item">
+            <div class="experience-item item-card">
                 {% if job is mapping %} {# Checks if job is a dictionary #}
                 <div class="item-header">
-                    <h3>{{ job.title | default('Job Title Not Specified') }}</h3>
-                    {% if job.company %}<p class="company">{{ job.company }}</p>{% endif %}
-                    {% if job.period %}<p class="period">{{ job.period }}</p>{% endif %}
+                    <h3 class="item-title">{{ job.title | default('Job Title Not Specified') }}</h3>
+                    {% if job.company %}<p class="item-organization">{{ job.company }}</p>{% endif %}
+                    {% if job.period %}<p class="item-period">{{ job.period }}</p>{% endif %}
                 </div>
-                {% if job.description %}<div class="item-description"><p>{{ job.description | replace('\n', '<br>') | safe }}</p></div>{% endif %}
+                {% if job.description %}<div class="item-description">{{ job.description | replace('\n', '<br>') | safe }}</div>{% endif %}
                 {% else %} {# job is a plain string #}
-                <div class="item-description"><p>{{ job | replace('\n', '<br>') | safe }}</p></div>
+                <div class="item-description fallback-text">{{ job | replace('\n', '<br>') | safe }}</div>
                 {% endif %}
             </div>
             {% endfor %}
@@ -179,19 +64,19 @@
         {% endif %}
 
         {% if data.education and data.education|length > 0 %}
-        <section id="education" class="portfolio-section">
+        <section id="education" class="portfolio-section card">
             <h2>Education</h2>
             {% for edu_item in data.education %}
-            <div class="education-item">
+            <div class="education-item item-card">
                 {% if edu_item is mapping %} {# Checks if edu_item is a dictionary #}
                 <div class="item-header">
-                    <h3>{{ edu_item.degree | default('Qualification Not Specified') }}</h3>
-                    {% if edu_item.institution %}<p class="institution">{{ edu_item.institution }}</p>{% endif %}
-                    {% if edu_item.period %}<p class="period">{{ edu_item.period }}</p>{% endif %}
+                    <h3 class="item-title">{{ edu_item.degree | default('Qualification Not Specified') }}</h3>
+                    {% if edu_item.institution %}<p class="item-organization">{{ edu_item.institution }}</p>{% endif %}
+                    {% if edu_item.period %}<p class="item-period">{{ edu_item.period }}</p>{% endif %}
                 </div>
-                {% if edu_item.details %}<div class="item-details"><p>{{ edu_item.details | replace('\n', '<br>') | safe }}</p></div>{% endif %}
+                {% if edu_item.description %}<div class="item-description">{{ edu_item.description | replace('\n', '<br>') | safe }}</div>{% endif %}
                 {% else %} {# edu_item is a plain string #}
-                <div class="item-details"><p>{{ edu_item | replace('\n', '<br>') | safe }}</p></div>
+                <div class="item-description fallback-text">{{ edu_item | replace('\n', '<br>') | safe }}</div>
                 {% endif %}
             </div>
             {% endfor %}
@@ -199,18 +84,21 @@
         {% endif %}
 
         {% if data.skills and data.skills|length > 0 %}
-        <section id="skills" class="portfolio-section">
+        <section id="skills" class="portfolio-section card">
             <h2>Skills</h2>
             <ul class="skills-list">
                 {% for skill in data.skills %}
-                <li>{{ skill }}</li>
+                <li class="skill-tag">{{ skill }}</li>
                 {% endfor %}
             </ul>
         </section>
         {% endif %}
 
-        <footer>
-            <p>&copy; {{ now.year if now else '2024' }} {{ data.name | default('Your Name') }}. Generated by Resume-to-Portfolio App.</p>
+        <footer class="portfolio-footer">
+            <p>&copy; {{ now.year if now else '2024' }} {{ data.name | default('Your Name') }}. 
+                <!-- Optional: You can add a link to your project or name here -->
+                <!-- Generated by Resume-to-Portfolio App. -->
+            </p>
         </footer>
     </div>
 </body>
