@@ -4,10 +4,8 @@ from flask import Flask, request, jsonify, send_from_directory, current_app
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from config import Config
-
-# Placeholder imports for future modules (not generated in this batch)
-# from resume_parser import parse_resume 
-# from portfolio_generator import generate_portfolio
+from resume_parser import parse_resume
+# from portfolio_generator import generate_portfolio # This function is not defined in portfolio_generator.py, generate_portfolio_html is
 
 # --- Helper Functions ---
 def allowed_file(filename):
@@ -15,55 +13,54 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
 
-# --- Mock Portfolio Data (until parser and generator are implemented) ---
-def get_mock_portfolio_data(filename):
-    """Generates mock portfolio data based on the uploaded filename."""
-    # Using hash of filename for a somewhat consistent random signature for Unsplash images
-    img_sig = abs(hash(filename)) % 1000 
-    return {
-        "name": "Alex Doe (from Resume)",
-        "title": "Proactive Professional & Quick Learner",
-        "profilePicUrl": f"https://source.unsplash.com/random/200x200?portrait&sig={img_sig}",
-        "summary": f"This interactive portfolio was dynamically generated from the resume: '{filename}'. It showcases key skills, experience, and educational background, ready for review.",
+def _transform_parsed_data_to_frontend_format(parsed_data):
+    """Transforms data from parse_resume into the format expected by PreviewPage.js."""
+    # profilePicUrl is handled directly in PreviewPage.js with a random image for now.
+    # The keys like 'fullName' and 'jobTitle' match what PreviewPage.js expects.
+    frontend_data = {
+        "fullName": parsed_data.get('name', 'Name not parsed'),
+        "jobTitle": parsed_data.get('title', 'Title not parsed'),
+        "summary": parsed_data.get('summary', 'Summary not parsed.'),
         "contact": {
-            "email": "alex.doe@example.com",
-            "phone": "+1-555-0199",
-            "linkedin": "linkedin.com/in/alexdoe",
-            "github": "github.com/alexdoe",
-            "portfolio": "alexdoe-portfolio.example.com"
+            "email": parsed_data.get('email', ''),
+            "phone": parsed_data.get('phone', ''),
+            "linkedin": parsed_data.get('linkedin', ''),
+            "github": parsed_data.get('github', '')
         },
-        "experience": [
-            { "id": 1, "title": "Lead Developer (Mock)", "company": "Innovatech Solutions", "duration": "Jan 2021 - Present", "description": "Led a team of 5 developers in creating scalable web solutions. Successfully launched 3 major products and improved system efficiency by 20%." },
-            { "id": 2, "title": "Software Engineer (Mock)", "company": "Future Systems Ltd.", "duration": "Jun 2018 - Dec 2020", "description": "Developed and maintained key features for enterprise software. Contributed to a 15% reduction in bug reports through rigorous testing and code optimization." }
-        ],
-        "education": [
-            { "id": 1, "degree": "M.S. in Advanced Computer Science", "institution": "Tech Excellence University", "year": "2018" },
-            { "id": 2, "degree": "B.S. in Computer Engineering", "institution": "State Engineering College", "year": "2016" }
-        ],
-        "skills": ["Python", "Flask", "React", "JavaScript", "Cloud Computing", "Agile Methodologies", "Problem Solving", "Team Leadership (mock)"]
+        # Experience and Education are passed as lists of strings/text blocks
+        # as parsed by the current resume_parser.py.
+        "experience": parsed_data.get('experience', []),
+        "education": parsed_data.get('education', []),
+        "skills": parsed_data.get('skills', [])
     }
+    return frontend_data
 
 # --- Flask App Initialization ---
-# The static_folder points to the React build directory.
-# The static_url_path means that files in static_folder are served from the root URL.
 app = Flask(__name__, static_folder='../frontend/build', static_url_path='/')
-app.config.from_object(Config) # Load configuration from config.Config object
+app.config.from_object(Config)
 
-# Setup logging
+# Configure logging
 if not app.debug:
-    # Configure root logger if not in debug mode. Flask's app.logger will inherit this.
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
+    # Use a more standard logging configuration for production
+    # Flask's app.logger will use this configuration
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
+elif app.debug:
+    # For debug mode, ensure logger level is DEBUG if needed, though Flask default is usually fine.
+    # app.logger.setLevel(logging.DEBUG) # Uncomment if more verbose debug logs are needed
+    pass # Default Flask debug logging is often sufficient
 
-CORS(app, resources={r"/api/*": {"origins": "*"}}) # Enable CORS for all API routes under /api/
+# Enable CORS for API routes
+CORS(app, resources={r"/api/*": {"origins": "*"}}) # For production, restrict origins
 
-# Ensure upload folder exists (create if it doesn't)
-# This uses the UPLOAD_FOLDER path from the loaded Config
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Ensure upload folder exists
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    app.logger.info(f"Created upload folder: {app.config['UPLOAD_FOLDER']}")
 
 # --- API Routes ---
 @app.route('/api/upload', methods=['POST'])
 def upload_resume_file():
-    """Handles resume file uploads, processes it (mocked), and returns portfolio data."""
     if 'resume' not in request.files:
         app.logger.warning('No resume file part in request.')
         return jsonify({"error": "No resume file part in the request."}), 400
@@ -75,8 +72,10 @@ def upload_resume_file():
     
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
-        # Consider adding a unique identifier to filename to prevent overwrites if necessary
-        # e.g., import uuid; filename = str(uuid.uuid4()) + "_" + filename
+        # Consider adding a unique prefix to filename to prevent overwrites if storing permanently
+        # import uuid
+        # unique_filename = str(uuid.uuid4()) + "_" + filename
+        # saved_filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         saved_filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
         try:
@@ -86,15 +85,17 @@ def upload_resume_file():
             app.logger.error(f"Failed to save file '{filename}': {e}", exc_info=True)
             return jsonify({"error": "Failed to save file on server."}), 500
 
-        # --- TODO: Actual Resume Parsing and Portfolio Generation ---
-        # try:
-        #     parsed_data = parse_resume(saved_filepath) # Call to resume_parser.py
-        #     portfolio_data = generate_portfolio(parsed_data) # Call to portfolio_generator.py
-        # except Exception as e:
-        #     app.logger.error(f"Error processing resume '{filename}': {e}", exc_info=True)
-        #     return jsonify({"error": "Failed to process resume data."}), 500
-        # For now, returning mock portfolio data directly:
-        portfolio_data = get_mock_portfolio_data(filename)
+        try:
+            parsed_data = parse_resume(saved_filepath)
+            # The filename argument was removed from _transform_parsed_data_to_frontend_format as it was unused.
+            portfolio_data = _transform_parsed_data_to_frontend_format(parsed_data)
+        except ValueError as ve: # Catch specific errors from parser if possible
+            app.logger.error(f"Unsupported file type or parsing error for '{filename}': {ve}", exc_info=True)
+            return jsonify({"error": str(ve)}), 400 # Or 422 Unprocessable Entity
+        except Exception as e:
+            app.logger.error(f"Error processing resume '{filename}': {e}", exc_info=True)
+            error_message = str(e) if app.debug else "Failed to process resume data."
+            return jsonify({"error": error_message}), 500
         
         return jsonify(portfolio_data), 200
     else:
@@ -103,24 +104,19 @@ def upload_resume_file():
         return jsonify({"error": f"File type not allowed. Allowed types: {allowed_types_str}"}), 400
 
 # --- Serve React App ---
-# This route serves the main index.html for the React app for any path not caught by API routes.
-# It also handles serving other static assets from the build folder if they exist.
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react_app(path):
-    """Serves the React application's static files."""
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:
-        # For any other path, serve index.html to support client-side routing.
         index_path = os.path.join(app.static_folder, 'index.html')
         if not os.path.exists(index_path):
             app.logger.error(f"index.html not found in static folder: {app.static_folder}")
-            return jsonify({"error": "Application not built or index.html missing."}), 404
+            # This usually means the frontend hasn't been built or static_folder is misconfigured.
+            return jsonify({"error": "Application not built or index.html missing. Please build the frontend."}), 404
         return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    # Port 9000 as per project requirements.
-    # Host '0.0.0.0' makes the server accessible externally (e.g., within Docker).
-    # Debug mode is controlled by the FLASK_DEBUG environment variable or Config.DEBUG.
-    app.run(host='0.0.0.0', port=9000)
+    # Debug mode is typically controlled by FLASK_DEBUG env var or app.config['DEBUG']
+    app.run(host='0.0.0.0', port=9000, debug=app.config.get('DEBUG', False))
