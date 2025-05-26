@@ -46,12 +46,13 @@ def get_mock_portfolio_data(filename):
 # --- Flask App Initialization ---
 # The static_folder points to the React build directory.
 # The static_url_path means that files in static_folder are served from the root URL.
-app = Flask(__name__, static_folder='../../frontend/build', static_url_path='/')
+app = Flask(__name__, static_folder='../frontend/build', static_url_path='/')
 app.config.from_object(Config) # Load configuration from config.Config object
 
 # Setup logging
 if not app.debug:
-    logging.basicConfig(level=logging.INFO)
+    # Configure root logger if not in debug mode. Flask's app.logger will inherit this.
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
 
 CORS(app, resources={r"/api/*": {"origins": "*"}}) # Enable CORS for all API routes under /api/
 
@@ -75,13 +76,14 @@ def upload_resume_file():
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         # Consider adding a unique identifier to filename to prevent overwrites if necessary
+        # e.g., import uuid; filename = str(uuid.uuid4()) + "_" + filename
         saved_filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
         try:
             file.save(saved_filepath)
             app.logger.info(f'File {filename} saved to {saved_filepath}')
         except Exception as e:
-            app.logger.error(f"Failed to save file '{filename}': {e}")
+            app.logger.error(f"Failed to save file '{filename}': {e}", exc_info=True)
             return jsonify({"error": "Failed to save file on server."}), 500
 
         # --- TODO: Actual Resume Parsing and Portfolio Generation ---
@@ -89,7 +91,7 @@ def upload_resume_file():
         #     parsed_data = parse_resume(saved_filepath) # Call to resume_parser.py
         #     portfolio_data = generate_portfolio(parsed_data) # Call to portfolio_generator.py
         # except Exception as e:
-        #     app.logger.error(f"Error processing resume '{filename}': {e}")
+        #     app.logger.error(f"Error processing resume '{filename}': {e}", exc_info=True)
         #     return jsonify({"error": "Failed to process resume data."}), 500
         # For now, returning mock portfolio data directly:
         portfolio_data = get_mock_portfolio_data(filename)
@@ -97,7 +99,7 @@ def upload_resume_file():
         return jsonify(portfolio_data), 200
     else:
         app.logger.warning(f'File type not allowed for {file.filename}.')
-        allowed_types_str = ', '.join(current_app.config['ALLOWED_EXTENSIONS'])
+        allowed_types_str = ', '.join(sorted(list(current_app.config['ALLOWED_EXTENSIONS'])))
         return jsonify({"error": f"File type not allowed. Allowed types: {allowed_types_str}"}), 400
 
 # --- Serve React App ---
@@ -111,6 +113,10 @@ def serve_react_app(path):
         return send_from_directory(app.static_folder, path)
     else:
         # For any other path, serve index.html to support client-side routing.
+        index_path = os.path.join(app.static_folder, 'index.html')
+        if not os.path.exists(index_path):
+            app.logger.error(f"index.html not found in static folder: {app.static_folder}")
+            return jsonify({"error": "Application not built or index.html missing."}), 404
         return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
