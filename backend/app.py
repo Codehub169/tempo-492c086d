@@ -1,5 +1,6 @@
 import os
 import logging
+import random # Added for profile image signature
 from flask import Flask, request, jsonify, send_from_directory, current_app
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -15,10 +16,7 @@ def allowed_file(filename):
 
 def _transform_parsed_data_to_frontend_format(parsed_data):
     """Transforms data from parse_resume into the format expected by PreviewPage.js."""
-    # profilePicUrl is handled directly in PreviewPage.js with a random image for now.
-    # The keys like 'fullName' and 'jobTitle' match what PreviewPage.js expects.
-    # Experience and Education are passed as lists which can contain dictionaries or strings,
-    # as per the updated resume_parser.py and PreviewPage.js capabilities.
+    profile_pic_sig = random.randint(1, 100000) # Generate a random signature for the image URL
     frontend_data = {
         "fullName": parsed_data.get('name', 'Name not parsed'),
         "jobTitle": parsed_data.get('title', 'Title not parsed'),
@@ -31,7 +29,8 @@ def _transform_parsed_data_to_frontend_format(parsed_data):
         },
         "experience": parsed_data.get('experience', []),
         "education": parsed_data.get('education', []),
-        "skills": parsed_data.get('skills', [])
+        "skills": parsed_data.get('skills', []),
+        "profile_image_url": f"https://source.unsplash.com/random/150x150/?portrait,person&sig={profile_pic_sig}"
     }
     return frontend_data
 
@@ -40,23 +39,25 @@ app = Flask(__name__, static_folder='../frontend/build', static_url_path='/')
 app.config.from_object(Config)
 
 # Configure logging
-if not app.debug:
+if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true": # Ensure logging is configured once
     # Use a more standard logging configuration for production
     # Flask's app.logger will use this configuration
-    logging.basicConfig(level=logging.INFO,
+    log_level = logging.DEBUG if app.debug else logging.INFO
+    logging.basicConfig(level=log_level,
                         format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
-elif app.debug:
-    # For debug mode, ensure logger level is DEBUG if needed, though Flask default is usually fine.
-    # app.logger.setLevel(logging.DEBUG) # Uncomment if more verbose debug logs are needed
-    pass # Default Flask debug logging is often sufficient
+    app.logger.info(f"Flask app '{__name__}' initialized. Debug: {app.debug}")
 
 # Enable CORS for API routes
-CORS(app, resources={r"/api/*": {"origins": "*"}}) # For production, restrict origins
+CORS(app, resources={r"/api/*": {"origins": "*"}}) # For production, restrict origins more tightly
 
 # Ensure upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.logger.info(f"Created upload folder: {app.config['UPLOAD_FOLDER']}")
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        app.logger.info(f"Created upload folder: {app.config['UPLOAD_FOLDER']}")
+    except OSError as e:
+        app.logger.error(f"Error creating upload folder {app.config['UPLOAD_FOLDER']}: {e}", exc_info=True)
+        # Depending on severity, might want to exit or raise
 
 # --- API Routes ---
 @app.route('/api/upload', methods=['POST'])
@@ -95,6 +96,14 @@ def upload_resume_file():
             app.logger.error(f"Error processing resume '{filename}': {e}", exc_info=True)
             error_message = str(e) if app.debug else "Failed to process resume data."
             return jsonify({"error": error_message}), 500
+        finally:
+            # Clean up uploaded file after processing, unless configured to keep
+            if os.path.exists(saved_filepath) and app.config.get('DELETE_UPLOADED_FILES_AFTER_PROCESSING', True):
+                try:
+                    os.remove(saved_filepath)
+                    app.logger.info(f"Removed temporary file: {saved_filepath}")
+                except OSError as e:
+                    app.logger.error(f"Error removing temporary file {saved_filepath}: {e}", exc_info=True)
         
         return jsonify(portfolio_data), 200
     else:
@@ -118,4 +127,5 @@ def serve_react_app(path):
 
 if __name__ == '__main__':
     # Debug mode is typically controlled by FLASK_DEBUG env var or app.config['DEBUG']
+    # Port is hardcoded to 9000 as per startup.sh expectation.
     app.run(host='0.0.0.0', port=9000, debug=app.config.get('DEBUG', False))

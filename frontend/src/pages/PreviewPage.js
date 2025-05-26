@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react'; // Removed unused useMemo
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const DownloadIcon = () => (
@@ -15,7 +15,7 @@ function PreviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const profilePicRandomSig = useMemo(() => Math.random(), []);
+  // const profilePicRandomSig = useMemo(() => Math.random(), []); // Removed as per instructions
 
   useEffect(() => {
     const dataFromState = location.state?.resumeData;
@@ -29,6 +29,7 @@ function PreviewPage() {
         setError(null);
       }
     } else {
+      // This case might occur if the user navigates directly to /preview without data
       setError('No portfolio data found. Please upload a resume first.');
       setPortfolioData(null);
     }
@@ -36,8 +37,11 @@ function PreviewPage() {
   }, [location.state]);
 
   const handleDownload = () => {
+    // Placeholder for download functionality
     alert('Download functionality to be implemented!');
     console.log('Downloading website files...');
+    // In a real app, this would likely call an API service from ../services/api.js
+    // e.g., downloadPortfolioFiles(portfolioData.id_if_available_or_entire_data);
   };
 
   const handleGoBack = () => {
@@ -45,7 +49,7 @@ function PreviewPage() {
   };
 
   const renderMultiLineText = (text, keyPrefix) => {
-    if (!text) return null;
+    if (typeof text !== 'string' || !text) return null;
     return text.split('\n').map((line, i, arr) => (
       <React.Fragment key={`${keyPrefix}-${i}`}>
         {line}
@@ -87,7 +91,8 @@ function PreviewPage() {
     summary = 'No summary provided.',
     experience = [],
     education = [],
-    skills = []
+    skills = [],
+    profile_image_url // Destructure the new prop
   } = portfolioData;
 
   return (
@@ -105,12 +110,16 @@ function PreviewPage() {
       </div>
 
       <div className="portfolio-preview-content">
-        {/* Mimicking portfolio_base.html structure with classes for App.css */}
         <section className="preview-hero-section">
           <img 
-            src={`https://source.unsplash.com/random/150x150/?portrait,person&sig=${profilePicRandomSig}`}
+            src={profile_image_url || `https://source.unsplash.com/random/150x150/?default,person&sig=${Math.random()}`} 
             alt={`Profile of ${fullName}`}
             className="preview-profile-image"
+            onError={(e) => { 
+              // Fallback if the provided URL fails to load, or if the Unsplash fallback also fails
+              e.target.onerror = null; // Prevents infinite loop if fallback also fails
+              e.target.src = `https://source.unsplash.com/random/150x150/?placeholder,person&sig=${Math.random() + 1}`; // Try a different fallback
+            }}
           />
           <h1 className="preview-user-name font-primary">{fullName}</h1>
           <p className="preview-user-title font-secondary">{jobTitle}</p>
@@ -119,7 +128,7 @@ function PreviewPage() {
         {summary && summary !== 'No summary provided.' && (
           <section className="portfolio-section preview-section">
             <h2 className="preview-section-title">About Me</h2>
-            <p className="preview-summary-text">{renderMultiLineText(summary, 'summary')}</p>
+            <div className="preview-summary-text">{renderMultiLineText(summary, 'summary')}</div>
           </section>
         )}
 
@@ -128,9 +137,11 @@ function PreviewPage() {
           <div className="preview-contact-details">
             {contact.email && <p><strong>Email:</strong> <a href={`mailto:${contact.email}`}>{contact.email}</a></p>}
             {contact.phone && <p><strong>Phone:</strong> {contact.phone}</p>}
-            {contact.linkedin && <p><strong>LinkedIn:</strong> <a href={`https://${contact.linkedin.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer">{contact.linkedin.replace(/^https?:\/\//, '')}</a></p>}
-            {contact.github && <p><strong>GitHub:</strong> <a href={`https://${contact.github.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer">{contact.github.replace(/^https?:\/\//, '')}</a></p>}
-            {!contact.email && !contact.phone && !contact.linkedin && !contact.github && <p>No contact details provided.</p>}
+            {contact.linkedin && <p><strong>LinkedIn:</strong> <a href={`https://${String(contact.linkedin).replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer">{String(contact.linkedin).replace(/^https?:\/\//, '')}</a></p>}
+            {contact.github && <p><strong>GitHub:</strong> <a href={`https://${String(contact.github).replace(/^https?:
+\/\//, '')}`} target="_blank" rel="noopener noreferrer">{String(contact.github).replace(/^https?:
+\/\//, '')}</a></p>}
+            {!contact.email && !contact.phone && !contact.linkedin && !contact.github && <p className="preview-fallback-text">No contact details provided.</p>}
           </div>
         </section>
 
@@ -139,18 +150,18 @@ function PreviewPage() {
           {experience.length > 0 ? experience.map((exp, index) => (
             <div key={`exp-${index}`} className="preview-item-card">
               {typeof exp === 'string' ? (
-                <p className="preview-fallback-text">{renderMultiLineText(exp, `exp-str-${index}`)}</p>
+                <div className="preview-fallback-text">{renderMultiLineText(exp, `exp-str-${index}`)}</div>
               ) : (
                 <>
                   <h3 className="preview-item-title font-primary">
                     {exp.title || 'Job Title'} {exp.company && `at ${exp.company}`}
                   </h3>
                   {exp.period && <p className="preview-item-meta font-secondary">{exp.period}</p>}
-                  {exp.description && <p className="preview-item-description">{renderMultiLineText(exp.description, `exp-desc-${index}`)}</p>}
+                  {exp.description && <div className="preview-item-description">{renderMultiLineText(exp.description, `exp-desc-${index}`)}</div>}
                 </>
               )}
             </div>
-          )) : <p>No work experience provided.</p>}
+          )) : <p className="preview-fallback-text">No work experience provided.</p>}
         </section>
 
         <section className="portfolio-section preview-section">
@@ -158,7 +169,7 @@ function PreviewPage() {
           {education.length > 0 ? education.map((edu, index) => (
             <div key={`edu-${index}`} className="preview-item-card">
               {typeof edu === 'string' ? (
-                <p className="preview-fallback-text">{renderMultiLineText(edu, `edu-str-${index}`)}</p>
+                <div className="preview-fallback-text">{renderMultiLineText(edu, `edu-str-${index}`)}</div>
               ) : (
                 <>
                   <h3 className="preview-item-title font-primary">
@@ -167,11 +178,13 @@ function PreviewPage() {
                   <p className="preview-item-meta font-secondary">
                     {edu.institution || 'Institution'} {edu.period && `- ${edu.period}`}
                   </p>
-                  {edu.description && <p className="preview-item-description">{renderMultiLineText(edu.description, `edu-desc-${index}`)}</p>}
+                  {edu.description && <div className="preview-item-description">{renderMultiLineText(edu.description, `edu-desc-${index}`)}</div>}
+                  {/* Added edu.details for completeness if parser supports it, though current parser might not fill this for dicts */}
+                  {edu.details && <div className="preview-item-description">{renderMultiLineText(edu.details, `edu-details-${index}`)}</div>}
                 </>
               )}
             </div>
-          )) : <p>No education details provided.</p>}
+          )) : <p className="preview-fallback-text">No education details provided.</p>}
         </section>
 
         <section className="portfolio-section preview-section">
@@ -184,7 +197,7 @@ function PreviewPage() {
                 </li>
               ))}
             </ul>
-          ) : <p>No skills listed.</p>}
+          ) : <p className="preview-fallback-text">No skills listed.</p>}
         </section>
       </div>
     </div>

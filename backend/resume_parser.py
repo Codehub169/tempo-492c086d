@@ -24,7 +24,7 @@ SECTION_KEYWORDS = {
 
 PERIOD_REGEX = re.compile(
     r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?(?:uary|ruary|rch|ril|y|ne|ly|ust|tember|ober|ember)?\s+\d{4}|\d{4}|\d{1,2}[/-]\d{4})" # Start Date (Month Year, Year, MM/YYYY)
-    r"\s*(?:-|–|—|to|\s+until\s+)\s*" # Separator
+    r"\s*(?:-|" + "\u2013" + "|" + "\u2014" + "|to|\s+until\s+)\s*" # Separator
     r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?(?:uary|ruary|rch|ril|y|ne|ly|ust|tember|ober|ember)?\s+\d{4}|\d{4}|\d{1,2}[/-]\d{4}|Present|Current|Ongoing)" # End Date
     r"|(\b\d{4}\b)" # Single year for education graduation
     , re.IGNORECASE
@@ -104,7 +104,7 @@ def _try_structure_item(text_block, item_type):
         return text_block
     
     # Remove empty description if it's just an empty string
-    if not item['description']:
+    if 'description' in item and not item['description']:
         del item['description']
 
     return item
@@ -122,16 +122,19 @@ def _process_section_content(section_name, content_lines, target_dict):
         target_dict[section_name].append(full_content_block)
     elif section_name == 'skills':
         # Split skills by common delimiters (comma, newline, semicolon, bullet points)
-        raw_skills = re.split(r'[\n,;•*-]', full_content_block)
+        raw_skills = re.split(r'[\n,;
+" + "\u2022" + "*-]', full_content_block)
         for skill in raw_skills:
             s = skill.strip()
             if s and len(s) > 1: # Basic validation for skill length
-                target_dict[section_name].append(s)
-    else: # For 'summary' or other single-block text sections
-        if target_dict.get(section_name):
-            target_dict[section_name] += "\n" + full_content_block
-        else:
-            target_dict[section_name] = full_content_block
+                if s not in target_dict[section_name]: # Avoid duplicate skills from same block
+                    target_dict[section_name].append(s)
+    elif section_name == 'summary':
+        # Explicit summary section should overwrite any heuristically gathered summary
+        target_dict[section_name] = full_content_block.strip()
+    # Note: If other generic single-block text sections are added in the future,
+    # they would need specific handling or a reinstated generic 'else' block.
+    # For now, any other section type not explicitly handled above will be ignored here.
 
 def _parse_sections(text_content):
     parsed_data = {
@@ -193,9 +196,8 @@ def _parse_sections(text_content):
                 temp_content = []
                 identified_new_section = True
                 section_line_indices.add(i)
-                break
-            if identified_new_section:
-                break
+                break # Found a section, process it
+        # Removed redundant `if identified_new_section: break` as it was inside the loop that sets it
         
         if not identified_new_section and i not in section_line_indices:
             # If line is not part of name/title extraction and not a section header
@@ -265,7 +267,7 @@ if __name__ == '__main__':
         doc.add_heading('Dr. Jane Doe', 0)
         doc.add_paragraph('Senior Quantum Physicist & Bagel Enthusiast')
         doc.add_paragraph('jane.doe@example.com | (555) 123-4567 | linkedin.com/in/janedoe | github.com/janedoe')
-        doc.add_heading('Overview', level=1)
+        doc.add_heading('Overview', level=1) # This will be treated as 'summary'
         doc.add_paragraph('A highly motivated physicist with a passion for bagels.')
         doc.add_heading('Professional Experience', level=1)
         doc.add_paragraph('Lead Physicist\nQuantum Bagel Labs\nJan 2020 - Present\n- Spearheaded research on bagel quantum properties.')
