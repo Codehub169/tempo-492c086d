@@ -1,20 +1,26 @@
 import os
 import re
+import logging
 from docx import Document
 from PyPDF2 import PdfReader
 
-# Basic regex patterns for contact information
+# Configure basic logging if this module is run directly (for testing)
+# When imported by app.py, Flask's logging config will likely take precedence.
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Basic regex patterns for contact information (using raw strings for clarity)
 EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-PHONE_REGEX = r"(?:\+?\d{1,3}[-\s\(\)]?)?(?:\d{2,4}[-\s\(\)]?){2,5}\d{2,4}" # More generic phone regex
+PHONE_REGEX = r"(?:\+?\d{1,3}[-\s()]?)?(?:\d{2,4}[-\s()]?){2,5}\d{2,4}"
 LINKEDIN_REGEX = r"linkedin\.com/in/\S+"
 GITHUB_REGEX = r"github\.com/\S+"
 
-# Keywords for section identification (very basic)
+# Keywords for section identification (expanded for better matching)
 SECTION_KEYWORDS = {
-    'summary': ['summary', 'objective', 'about me', 'professional profile'],
-    'experience': ['experience', 'work history', 'employment history', 'professional experience'],
-    'education': ['education', 'academic background', 'qualifications'],
-    'skills': ['skills', 'technical skills', 'proficiencies', 'core competencies']
+    'summary': ['summary', 'objective', 'about me', 'professional profile', 'personal statement', 'overview'],
+    'experience': ['experience', 'work history', 'employment history', 'professional experience', 'career summary', 'projects', 'relevant experience'],
+    'education': ['education', 'academic background', 'qualifications', 'academic history', 'scholastic record'],
+    'skills': ['skills', 'technical skills', 'proficiencies', 'core competencies', 'technical expertise', 'technologies', 'tools']
 }
 
 def _extract_text_from_pdf(file_path):
@@ -23,9 +29,11 @@ def _extract_text_from_pdf(file_path):
     try:
         reader = PdfReader(file_path)
         for page in reader.pages:
-            text += page.extract_text() + "\n"
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
     except Exception as e:
-        print(f"Error reading PDF {file_path}: {e}")
+        logging.error(f"Error reading PDF {file_path}: {e}", exc_info=True)
     return text
 
 def _extract_text_from_docx(file_path):
@@ -36,104 +44,130 @@ def _extract_text_from_docx(file_path):
         for para in doc.paragraphs:
             text += para.text + "\n"
     except Exception as e:
-        print(f"Error reading DOCX {file_path}: {e}")
+        logging.error(f"Error reading DOCX {file_path}: {e}", exc_info=True)
     return text
+
+def _process_section_content(section_name, content_lines, target_dict):
+    """Helper function to process accumulated content for a section."""
+    if not section_name or not content_lines or section_name not in target_dict:
+        return
+
+    full_content_block = '\n'.join(content_lines)
+
+    if section_name in ['experience', 'education']:
+        target_dict[section_name].append(full_content_block)
+    elif section_name == 'skills':
+        for item_line in content_lines:
+            skills_found = [s.strip() for s in item_line.split(',') if s.strip()]
+            target_dict[section_name].extend(skills_found)
+    else: # For 'summary' or other single-block text sections
+        if target_dict[section_name]: # Append if content already exists
+            target_dict[section_name] += "\n" + full_content_block
+        else:
+            target_dict[section_name] = full_content_block
 
 def _parse_sections(text_content):
     """Rudimentary parsing of text into predefined sections based on keywords."""
-    # This is a highly simplified parser and will need significant improvement
-    # for real-world resumes. It assumes sections are clearly demarcated.
     parsed_data = {
-        'name': 'Your Name', # Placeholder, name extraction is complex
-        'title': 'Professional Title', # Placeholder
+        'name': 'Your Name', 
+        'title': 'Professional Title',
         'email': '',
         'phone': '',
         'linkedin': '',
         'github': '',
         'summary': '',
-        'experience': [], # List of strings or dicts
-        'education': [],  # List of strings or dicts
-        'skills': []      # List of strings
+        'experience': [],
+        'education': [],
+        'skills': []
     }
 
-    # Extract contact info
-    parsed_data['email'] = ', '.join(re.findall(EMAIL_REGEX, text_content, re.IGNORECASE))
-    parsed_data['phone'] = ', '.join(re.findall(PHONE_REGEX, text_content))
-    parsed_data['linkedin'] = ', '.join(re.findall(LINKEDIN_REGEX, text_content, re.IGNORECASE))
-    parsed_data['github'] = ', '.join(re.findall(GITHUB_REGEX, text_content, re.IGNORECASE))
+    # Extract contact info (take first unique one for links, comma-join for email/phone)
+    parsed_data['email'] = ', '.join(sorted(list(set(re.findall(EMAIL_REGEX, text_content, re.IGNORECASE)))))
+    parsed_data['phone'] = ', '.join(sorted(list(set(re.findall(PHONE_REGEX, text_content)))))
+    
+    linkedin_urls = sorted(list(set(re.findall(LINKEDIN_REGEX, text_content, re.IGNORECASE))))
+    if linkedin_urls:
+        parsed_data['linkedin'] = linkedin_urls[0]
 
-    # Basic section extraction (highly heuristic)
+    github_urls = sorted(list(set(re.findall(GITHUB_REGEX, text_content, re.IGNORECASE))))
+    if github_urls:
+        parsed_data['github'] = github_urls[0]
+
     lines = [line.strip() for line in text_content.split('\n') if line.strip()]
     current_section = None
     temp_content = []
 
     # Attempt to get name and title from early lines (very naive)
-    if len(lines) > 0: parsed_data['name'] = lines[0]
-    if len(lines) > 1 and len(lines[1].split()) < 5: parsed_data['title'] = lines[1] # Guess title if short
+    # These lines will be skipped in the main parsing loop if successfully identified.
+    parsed_name_line = -1
+    parsed_title_line = -1
 
-    for line in lines:
+    if len(lines) > 0:
+        parsed_data['name'] = lines[0]
+        parsed_name_line = 0
+        if len(lines) > 1 and len(lines[1].split()) < 7 and not re.search(EMAIL_REGEX + "|" + PHONE_REGEX, lines[1], re.IGNORECASE):
+            parsed_data['title'] = lines[1]
+            parsed_title_line = 1
+
+    for i, line in enumerate(lines):
+        if i == parsed_name_line or i == parsed_title_line:
+            continue # Skip lines already used for name/title
+
         line_lower = line.lower()
-        found_section = False
-        for section_key, keywords in SECTION_KEYWORDS.items():
-            for keyword in keywords:
-                if keyword in line_lower and len(line.split()) < 5: # Assume section headers are short
-                    if current_section and temp_content:
-                        if section_key in ['experience', 'education']:
-                             parsed_data[current_section].append('\n'.join(temp_content))
-                        elif section_key == 'skills':
-                            # Split skills by comma, then extend the list
-                            skills_from_content = []
-                            for item in temp_content:
-                                skills_from_content.extend([s.strip() for s in item.split(',') if s.strip()])
-                            parsed_data[current_section].extend(skills_from_content)
-                        else: # summary
-                            parsed_data[current_section] = '\n'.join(temp_content)
-                    current_section = section_key
-                    temp_content = []
-                    found_section = True
-                    break
-            if found_section: break
-        
-        if not found_section and current_section:
-            temp_content.append(line)
+        identified_new_section = False
 
-    # Add content of the last section
-    if current_section and temp_content:
-        if current_section in ['experience', 'education']:
-                parsed_data[current_section].append('\n'.join(temp_content))
-        elif current_section == 'skills':
-            skills_from_content = []
-            for item in temp_content:
-                skills_from_content.extend([s.strip() for s in item.split(',') if s.strip()])
-            parsed_data[current_section].extend(skills_from_content)
-        else: # summary
-            parsed_data[current_section] = '\n'.join(temp_content)
+        for section_key_candidate, keywords in SECTION_KEYWORDS.items():
+            for keyword in keywords:
+                if keyword in line_lower and len(line.split()) < 5 and len(line) < 60: 
+                    _process_section_content(current_section, temp_content, parsed_data)
+                    current_section = section_key_candidate
+                    temp_content = [] # Header line is not part of content
+                    identified_new_section = True
+                    break 
+            if identified_new_section:
+                break 
+        
+        if not identified_new_section:
+            if current_section:
+                temp_content.append(line)
+            elif not parsed_data['summary'] and len(line.split()) > 3: # Content before any section
+                parsed_data['summary'] += line + "\n"
+
+    _process_section_content(current_section, temp_content, parsed_data)
     
-    # Clean up skills list (remove duplicates and very short/long items)
     if parsed_data['skills']:
-        parsed_data['skills'] = sorted(list(set(skill for skill in parsed_data['skills'] if len(skill) > 1 and len(skill) < 50)))
+        unique_skills = list(set(s.strip().capitalize() for s in parsed_data['skills'] if s.strip()))
+        parsed_data['skills'] = sorted([skill for skill in unique_skills if 1 < len(skill) < 50])
+    else:
+        parsed_data['skills'] = []
+
+    if parsed_data['summary']:
+        parsed_data['summary'] = parsed_data['summary'].strip()
 
     return parsed_data
 
 def parse_resume(file_path):
-    """Parses a resume file (PDF or DOCX) and extracts information."""
+    """Parses a resume file (PDF, DOCX, DOC) and extracts information."""
     _, file_extension = os.path.splitext(file_path)
     text_content = ""
 
-    if file_extension.lower() == '.pdf':
+    ext_lower = file_extension.lower()
+    if ext_lower == '.pdf':
         text_content = _extract_text_from_pdf(file_path)
-    elif file_extension.lower() == '.docx':
+    elif ext_lower in ['.docx', '.doc']:
+        # Note: python-docx has primary support for .docx. 
+        # Basic .doc support might work but is not guaranteed.
         text_content = _extract_text_from_docx(file_path)
     else:
-        raise ValueError("Unsupported file type. Only PDF and DOCX are supported.")
+        allowed_types = "PDF, DOCX, DOC"
+        raise ValueError(f"Unsupported file type: {ext_lower}. Only {allowed_types} are supported.")
 
     if not text_content.strip():
-        # Fallback if text extraction yields nothing or only whitespace
         return {
             'name': 'Error: Could Not Parse Name',
             'title': 'Error: Could Not Parse Title',
             'email': '', 'phone': '', 'linkedin': '', 'github': '',
-            'summary': 'Could not extract text from the resume. The document might be image-based or corrupted.',
+            'summary': 'Could not extract text from the resume. The document might be image-based, corrupted, or empty.',
             'experience': [],
             'education': [],
             'skills': []
@@ -143,33 +177,50 @@ def parse_resume(file_path):
     return parsed_data
 
 if __name__ == '__main__':
-    # Example Usage (Create dummy files for testing)
-    # Create a dummy docx
-    # from docx import Document as DocxCreate
-    # doc = DocxCreate()
-    # doc.add_heading('John Doe', 0)
-    # doc.add_paragraph('Software Engineer')
-    # doc.add_paragraph('Email: john.doe@example.com Phone: 123-456-7890')
-    # doc.add_heading('Summary', level=1)
-    # doc.add_paragraph('A passionate software engineer...') 
-    # doc.add_heading('Experience', level=1)
-    # doc.add_paragraph('Software Developer at Tech Corp (2020-Present)\nAnother line for experience.')
-    # doc.add_heading('Education', level=1)
-    # doc.add_paragraph('B.S. Computer Science from University of Example (2020)')
-    # doc.add_heading('Skills', level=1)
-    # doc.add_paragraph('Python, Java, JavaScript, React')
-    # doc.save('dummy_resume.docx')
-    # print("Dummy DOCX created.")
-    # parsed_docx = parse_resume('dummy_resume.docx')
-    # print("\n--- Parsed DOCX ---")
-    # for key, value in parsed_docx.items():
-    #     print(f"{key.capitalize()}: {value}")
+    # Example Usage (Create dummy files for testing or provide paths)
+    dummy_docx_path = 'dummy_resume.docx' 
+    dummy_pdf_path = 'dummy_resume.pdf' # Needs to be created manually
 
-    # Create a dummy PDF (difficult to do programmatically without external libs like reportlab)
-    # print("\nPlease create a dummy_resume.pdf manually for testing PDF parsing.")
-    # if os.path.exists('dummy_resume.pdf'):
-    #     parsed_pdf = parse_resume('dummy_resume.pdf')
-    #     print("\n--- Parsed PDF ---")
-    #     for key, value in parsed_pdf.items():
-    #         print(f"{key.capitalize()}: {value}")
+    # Create a dummy docx for testing
+    try:
+        from docx import Document as DocxCreate # Renamed for clarity
+        doc = DocxCreate()
+        doc.add_heading('Dr. Jane Doe', 0)
+        doc.add_paragraph('Senior Quantum Physicist & Bagel Enthusiast')
+        doc.add_paragraph('jane.doe@example.com | 555-123-4567 | linkedin.com/in/janedoe | github.com/janedoe')
+        doc.add_heading('Overview', level=1)
+        doc.add_paragraph('A highly motivated and experienced physicist with a strong background in quantum mechanics and a passion for bagels. Proven ability to solve complex problems and lead research initiatives. Seeking a challenging role that combines scientific inquiry with breakfast food exploration.')
+        doc.add_heading('Professional Experience', level=1)
+        doc.add_paragraph('Lead Physicist, Quantum Bagel Labs (2018-Present)\n- Spearheaded research on the quantum properties of toasted bagels.\n- Managed a team of 3 junior physicists and 2 bakers.\n- Published 5 papers in prestigious bagel-physics journals.')
+        doc.add_paragraph('Research Fellow, Institute of Theoretical Breakfast (2015-2018)\n- Conducted experiments on Schrödinger\'s cat and its breakfast preferences.\n- Developed new models for predicting coffee spill patterns.')
+        doc.add_heading('Education', level=1)
+        doc.add_paragraph('Ph.D. in Quantum Bagel Dynamics, University of Advanced Studies (2015)')
+        doc.add_paragraph('B.S. in Physics, State College (2011)')
+        doc.add_heading('Technical Skills', level=1)
+        doc.add_paragraph('Quantum Entanglement, Python, LaTeX, Matlab, Data Analysis, Bagel Slicing, Cream Cheese Spreading, Public Speaking')
+        doc.add_paragraph('Leadership, Problem Solving, Critical Thinking')
+        doc.save(dummy_docx_path)
+        logging.info(f"Dummy DOCX created at {dummy_docx_path}")
+        
+        parsed_docx_data = parse_resume(dummy_docx_path)
+        logging.info("\n--- Parsed DOCX Data ---")
+        for key, value in parsed_docx_data.items():
+            logging.info(f"{key.capitalize()}: {value}")
+    except ImportError:
+        logging.warning("python-docx library not found. Cannot create or parse dummy DOCX.")
+    except Exception as e:
+        logging.error(f"Error in DOCX example processing: {e}", exc_info=True)
+
+    # Test with a PDF (ensure dummy_resume.pdf exists or provide a valid path)
+    if os.path.exists(dummy_pdf_path):
+        logging.info(f"\n--- Parsing PDF: {dummy_pdf_path} ---")
+        try:
+            parsed_pdf_data = parse_resume(dummy_pdf_path)
+            logging.info("\n--- Parsed PDF Data ---")
+            for key, value in parsed_pdf_data.items():
+                logging.info(f"{key.capitalize()}: {value}")
+        except Exception as e:
+            logging.error(f"Error parsing PDF {dummy_pdf_path}: {e}", exc_info=True)
+    else:
+        logging.warning(f"Dummy PDF {dummy_pdf_path} not found. Create it manually for testing PDF parsing.")
     pass
